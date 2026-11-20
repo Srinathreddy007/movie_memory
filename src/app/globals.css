@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
+/*
+ * Movie Memory theme — one cinema-style palette used by every page.
+ * Use these via Tailwind utilities: bg-surface, text-muted, border-line,
+ * text-accent, bg-accent, etc.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b0a1a;        /* near-black indigo */
+  --foreground: #f4f1ff;        /* soft white */
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-strong: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.12);
+  --muted: #a8a3c7;             /* lavender grey */
+  --accent: #fbbf24;            /* marquee amber */
+  --accent-strong: #f59e0b;
+  --accent-ink: #1c1206;        /* text on amber */
+  --danger: #fb7185;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  min-height: 100vh;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* Indigo base with violet + amber "projector" glows. */
+  background:
+    radial-gradient(60rem 40rem at 15% -10%, rgba(124, 58, 237, 0.35), transparent 60%),
+    radial-gradient(50rem 35rem at 110% 110%, rgba(245, 158, 11, 0.18), transparent 60%),
+    linear-gradient(180deg, #120f2b 0%, var(--background) 100%);
+  background-attachment: fixed;
 }

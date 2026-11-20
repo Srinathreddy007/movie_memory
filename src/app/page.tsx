@@ -1,103 +1,89 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
+import { auth, signIn } from "@/server/auth";
+import { GoogleIcon } from "@/components/GoogleIcon";
 
-export default function Home() {
+const STEPS = [
+  { icon: "🔐", title: "Sign in", body: "One click with your Google account." },
+  { icon: "🎞️", title: "Pick a movie", body: "Tell us the film you love most." },
+  { icon: "✨", title: "Get a fun fact", body: "AI-powered trivia, fresh every visit." },
+];
+
+// Auth.js redirects here with ?error=<code> when sign-in fails.
+function authErrorMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  if (code === "AccessDenied" || code === "access_denied") {
+    return "Google sign-in was cancelled or not allowed. Please try again.";
+  }
+  return "We couldn't sign you in right now. Please try again.";
+}
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  // Signed-in users skip the landing page. /dashboard decides between
+  // onboarding (first-time) and the dashboard itself (returning).
+  const session = await auth();
+  if (session?.user?.id) redirect("/dashboard");
+
+  const errorMessage = authErrorMessage((await searchParams).error);
+
+  async function signInWithGoogle() {
+    "use server";
+    await signIn("google", { redirectTo: "/dashboard" });
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="rounded-3xl border border-line bg-surface p-8 shadow-2xl shadow-violet-950/50 backdrop-blur">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 text-3xl ring-1 ring-accent/30">
+            🎬
+          </div>
+          <h1 className="mt-5 text-center text-3xl font-bold tracking-tight">
+            Movie <span className="text-accent">Memory</span>
+          </h1>
+          <p className="mt-2 text-center text-muted">
+            Your favorite movie, remembered — plus a fun fact about it every time you visit.
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          {errorMessage && (
+            <p
+              role="alert"
+              className="mt-6 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-center text-sm text-danger"
+            >
+              {errorMessage}
+            </p>
+          )}
+
+          <form action={signInWithGoogle} className="mt-8">
+            {/* Google-branded button: white background, multicolor G, dark text. */}
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 font-medium text-[#1f1f1f] shadow-sm ring-1 ring-black/10 transition hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </button>
+          </form>
+          <p className="mt-3 text-center text-xs text-muted">
+            We only use your name, email and profile photo.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <ol className="mt-6 grid grid-cols-3 gap-3">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className="rounded-2xl border border-line bg-surface p-3 text-center">
+              <div className="text-xl">{step.icon}</div>
+              <div className="mt-1 text-sm font-semibold">
+                <span className="text-accent">{i + 1}.</span> {step.title}
+              </div>
+              <div className="mt-1 text-xs leading-snug text-muted">{step.body}</div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </main>
   );
 }

@@ -1,0 +1,51 @@
+// Movie Memory data model — two tables.
+//
+// Auth uses JWT sessions (no Auth.js adapter tables). We upsert the User row
+// ourselves on Google sign-in, keyed by Google's stable account id (`sub`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String  @id @default(cuid())
+  /// Google's stable account id (`sub` claim). Email can change; this can't.
+  googleId String  @unique
+  email    String?
+  name     String?
+  image    String?
+
+  /// null => user has not completed onboarding yet.
+  favoriteMovie String?
+
+  /// Burst/idempotency lease: while in the future, one request owns fact
+  /// generation for this user. Claimed with an atomic conditional UPDATE and
+  /// expires on its own if the owning process crashes. Lives on User because a
+  /// user has exactly one favorite movie at a time.
+  factLockedUntil DateTime?
+
+  facts     Fact[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A generated fun fact. `movie` is a snapshot of the title the fact was
+/// generated for, so the cache key is (userId, movie) and changing the
+/// favorite movie naturally starts a fresh cache scope.
+model Fact {
+  id        String   @id @default(cuid())
+  userId    String
+  movie     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Serves "latest fact for this user + movie" with a single index seek.
+  @@index([userId, movie, createdAt(sort: Desc)])
+}
