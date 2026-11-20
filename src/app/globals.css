@@ -44,3 +44,113 @@ body {
     linear-gradient(180deg, #120f2b 0%, var(--background) 100%);
   background-attachment: fixed;
 }
+
+/* ── Live background (src/components/LiveBackground.tsx) ───────────────────── */
+.film-strip {
+  position: absolute;
+  left: -50vw;
+  width: 200vw;
+  height: 8.5rem;
+  padding: 1.5rem 0;
+  background-color: rgba(10, 8, 6, 0.88);
+  /* Sprocket holes along the top and bottom edges */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.22) 0 14px, transparent 14px 32px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.22) 0 14px, transparent 14px 32px);
+  background-size: 100% 10px, 100% 10px;
+  background-position: 0 6px, 0 calc(100% - 6px);
+  background-repeat: repeat-x;
+  border-block: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  opacity: 0.55;
+}
+.film-strip-1 { top: 6%;  transform: rotate(-12deg); }
+.film-strip-2 { top: 44%; transform: rotate(-12deg); opacity: 0.35; }
+.film-strip-3 { top: 82%; transform: rotate(-12deg); }
+
+.film-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: film-scroll 60s linear infinite;
+}
+.film-strip-2 .film-track { animation-duration: 80s; animation-direction: reverse; }
+.film-strip-3 .film-track { animation-duration: 70s; }
+
+.film-frame {
+  flex: none;
+  width: 8rem;
+  height: 100%;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 2.6rem;
+  /* Warm "lit film" frame: amber light falling on a near-black sepia cell */
+  background:
+    radial-gradient(circle at 50% 35%, rgba(251, 191, 36, 0.28), transparent 70%),
+    linear-gradient(160deg, rgba(120, 72, 20, 0.45), rgba(18, 12, 8, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.film-frame span { filter: sepia(0.25) saturate(0.85) drop-shadow(0 4px 10px rgba(0,0,0,0.6)); }
+@keyframes film-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.film-reel {
+  position: absolute;
+  color: rgba(251, 191, 36, 0.18);
+  animation: reel-spin 14s linear infinite;
+}
+.film-reel-1 { width: 18rem; height: 18rem; top: -5rem; right: -5rem; }
+.film-reel-2 { width: 14rem; height: 14rem; bottom: -4rem; left: -4rem; animation-direction: reverse; animation-duration: 10s; }
+@keyframes reel-spin { to { transform: rotate(360deg); } }
+
+.live-beam {
+  position: absolute;
+  top: -10vh; left: 50%;
+  width: 120vmax; height: 120vmax;
+  transform: translateX(-50%);
+  background: conic-gradient(from 180deg at 50% 0,
+    transparent 0deg 160deg, rgba(255, 244, 214, 0.08) 172deg,
+    rgba(255, 244, 214, 0.12) 180deg, rgba(255, 244, 214, 0.08) 188deg,
+    transparent 200deg 360deg);
+  animation: beam-flicker 4s steps(1) infinite;
+}
+@keyframes beam-flicker {
+  0%, 100% { opacity: 1; }
+  12% { opacity: 0.75; }
+  14% { opacity: 1; }
+  47% { opacity: 0.85; }
+  49% { opacity: 1; }
+  78% { opacity: 0.7; }
+  80% { opacity: 1; }
+}
+
+.live-grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: live-grain 1.2s steps(6) infinite;
+}
+@keyframes live-grain {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-4%, 3%); }
+  40%  { transform: translate(3%, -5%); }
+  60%  { transform: translate(-6%, -2%); }
+  80%  { transform: translate(5%, 4%); }
+  100% { transform: translate(0, 0); }
+}
+
+.live-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(11, 10, 26, 0.55) 25%, rgba(5, 4, 15, 0.85) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-bg * { animation: none !important; }
+}
