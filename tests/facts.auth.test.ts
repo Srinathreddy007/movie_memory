@@ -10,11 +10,13 @@ vi.mock("@/server/openai", () => ({
 }));
 
 // Import after mocks are registered.
-const { GET } = await import("@/app/api/fact/route");
+const { GET, POST } = await import("@/app/api/fact/route");
+const { generateMovieFact } = await import("@/server/openai");
 
 beforeEach(async () => {
   await resetDb();
   authMock.mockReset();
+  vi.mocked(generateMovieFact).mockClear();
 });
 
 /** User A with a fresh (cached) fact that must never leak to anyone else. */
@@ -55,11 +57,11 @@ describe("authorization: service layer", () => {
   });
 });
 
-describe("authorization: GET /api/fact", () => {
+describe("authorization: POST /api/fact (request a fact)", () => {
   it("returns 401 when there is no session", async () => {
     authMock.mockResolvedValue(null);
 
-    const res = await GET();
+    const res = await POST();
 
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({
@@ -72,7 +74,7 @@ describe("authorization: GET /api/fact", () => {
     const userB = await createUser("Inception");
     authMock.mockResolvedValue({ user: { id: userB.id } });
 
-    const res = await GET();
+    const res = await POST();
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -88,7 +90,7 @@ describe("authorization: GET /api/fact", () => {
     const { userA, factA } = await seedUserAWithFact();
     authMock.mockResolvedValue({ user: { id: userA.id } });
 
-    const res = await GET();
+    const res = await POST();
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -99,9 +101,60 @@ describe("authorization: GET /api/fact", () => {
     const user = await createUser(null);
     authMock.mockResolvedValue({ user: { id: user.id } });
 
-    const res = await GET();
+    const res = await POST();
 
     expect(res.status).toBe(409);
     expect((await res.json()).error.code).toBe("NO_MOVIE");
+  });
+});
+
+describe("GET /api/fact (read-only latest fact)", () => {
+  it("returns 401 when there is no session", async () => {
+    authMock.mockResolvedValue(null);
+    const res = await GET();
+    expect(res.status).toBe(401);
+  });
+
+  it("returns null and never calls OpenAI when no fact exists yet", async () => {
+    const user = await createUser("Inception");
+    authMock.mockResolvedValue({ user: { id: user.id } });
+
+    const res = await GET();
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ fact: null });
+    expect(generateMovieFact).not.toHaveBeenCalled();
+    expect(await prisma.fact.count()).toBe(0);
+  });
+
+  it("returns the session user's most recent fact without generating, even if it is stale", async () => {
+    const user = await createUser("Inception");
+    await prisma.fact.create({
+      data: { userId: user.id, movie: "Inception", content: "old", createdAt: new Date(Date.now() - 3_600_000) },
+    });
+    const latest = await prisma.fact.create({
+      data: { userId: user.id, movie: "Inception", content: "newest", createdAt: new Date(Date.now() - 600_000) },
+    });
+    authMock.mockResolvedValue({ user: { id: user.id } });
+
+    const body = await (await GET()).json();
+
+    expect(body.fact).toMatchObject({ id: latest.id, content: "newest" });
+    expect(generateMovieFact).not.toHaveBeenCalled();
+    expect(await prisma.fact.count()).toBe(2);
+  });
+
+  it("never returns another user's fact, even for the same movie", async () => {
+    await seedUserAWithFact();
+    const userB = await createUser("Inception");
+    authMock.mockResolvedValue({ user: { id: userB.id } });
+
+    expect(await (await GET()).json()).toEqual({ fact: null });
+  });
+
+  it("returns 409 NO_MOVIE for a user who has not onboarded", async () => {
+    const user = await createUser(null);
+    authMock.mockResolvedValue({ user: { id: user.id } });
+    expect((await GET()).status).toBe(409);
   });
 });

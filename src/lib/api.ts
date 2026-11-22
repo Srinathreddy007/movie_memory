@@ -9,8 +9,9 @@
 import type {
   ApiErrorBody,
   ApiErrorCode,
-  GetFactResponse,
+  GetLatestFactResponse,
   GetMeResponse,
+  RequestFactResponse,
   UpdateMovieRequest,
   UpdateMovieResponse,
 } from "@/shared/api-types";
@@ -37,7 +38,7 @@ function isErrorBody(value: unknown): value is ApiErrorBody {
   return typeof err?.code === "string" && typeof err?.message === "string";
 }
 
-async function request<T>(method: "GET" | "PUT", path: string, body?: unknown): Promise<T> {
+async function request<T>(method: "GET" | "PUT" | "POST", path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
@@ -75,6 +76,9 @@ export const api = {
   updateMovie: (movie: string) =>
     request<UpdateMovieResponse>("PUT", "/api/me/movie", { movie } satisfies UpdateMovieRequest),
 
-  /** GET /api/fact */
-  getFact: () => request<GetFactResponse>("GET", "/api/fact"),
+  /** GET /api/fact — latest stored fact (or null). Read-only: never generates. */
+  getLatestFact: () => request<GetLatestFactResponse>("GET", "/api/fact"),
+
+  /** POST /api/fact — request a fact: cached if < 60s old, otherwise newly generated. */
+  requestFact: () => request<RequestFactResponse>("POST", "/api/fact"),
 };

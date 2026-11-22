@@ -35,8 +35,11 @@ export type UpdateMovieRequest = { movie: string };
 /** PUT /api/me/movie → 200 */
 export type UpdateMovieResponse = { user: MeDTO };
 
-/** GET /api/fact → 200 */
-export type GetFactResponse = { fact: FactDTO; source: FactSource };
+/** GET /api/fact → 200. Read-only latest stored fact; null if none generated yet. */
+export type GetLatestFactResponse = { fact: FactDTO | null };
+
+/** POST /api/fact → 200. Request a fact: cached if < 60s old, else newly generated. */
+export type RequestFactResponse = { fact: FactDTO; source: FactSource };
 
 // ---- Errors ----------------------------------------------------------------
 

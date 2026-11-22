@@ -14,7 +14,16 @@ afterEach(() => vi.unstubAllGlobals());
 describe("typed API client", () => {
   it("returns the typed body on success", async () => {
     mockFetch(() => json(200, { fact: { id: "f1", movie: "Up", content: "c", createdAt: "t" }, source: "cache" }));
-    await expect(api.getFact()).resolves.toMatchObject({ source: "cache", fact: { id: "f1" } });
+    await expect(api.requestFact()).resolves.toMatchObject({ source: "cache", fact: { id: "f1" } });
+  });
+
+  it("reads the latest fact with GET and requests a new one with POST", async () => {
+    mockFetch(() => json(200, { fact: null }));
+    await expect(api.getLatestFact()).resolves.toEqual({ fact: null });
+    await api.requestFact().catch(() => {});
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls[0]).toMatchObject(["/api/fact", { method: "GET" }]);
+    expect(calls[1]).toMatchObject(["/api/fact", { method: "POST" }]);
   });
 
   it("normalizes a 401 into ApiError(UNAUTHORIZED)", async () => {
@@ -35,12 +44,12 @@ describe("typed API client", () => {
 
   it("normalizes a 500 with a non-JSON body into a generic ApiError", async () => {
     mockFetch(() => Promise.resolve(new Response("<html>oops</html>", { status: 500 })));
-    await expect(api.getFact()).rejects.toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
+    await expect(api.requestFact()).rejects.toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
   });
 
   it("normalizes a network failure into ApiError(NETWORK_ERROR)", async () => {
     mockFetch(() => Promise.reject(new TypeError("Failed to fetch")));
-    await expect(api.getFact()).rejects.toMatchObject({ status: 0, code: "NETWORK_ERROR" });
+    await expect(api.getLatestFact()).rejects.toMatchObject({ status: 0, code: "NETWORK_ERROR" });
   });
 
   it("sends PUT /api/me/movie with a JSON body", async () => {

@@ -10,13 +10,13 @@ import { prisma } from "@/server/db";
 export async function requireUser() {
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) redirect("/");
+  if (!userId) redirect("/?notice=signin-required"); // logged out → sign-in page
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, image: true, favoriteMovie: true },
+    select: { id: true, name: true, email: true, image: true, favoriteMovie: true, createdAt: true },
   });
   // Session points at a deleted user: treat as signed out.
-  if (!user) redirect("/");
+  if (!user) redirect("/?notice=signin-required");
   return user;
 }

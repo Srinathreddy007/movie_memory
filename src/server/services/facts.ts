@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/server/db";
 import type { FactDTO, FactSource } from "@/shared/api-types";
+import { FACT_CACHE_WINDOW_MS } from "@/shared/limits";
 
 /**
  * Fact service — Variant A (caching + correctness).
@@ -18,7 +19,7 @@ import type { FactDTO, FactSource } from "@/shared/api-types";
  * another user's facts.
  */
 
-export const CACHE_WINDOW_MS = 60_000;
+export const CACHE_WINDOW_MS = FACT_CACHE_WINDOW_MS; // shared with the UI countdown
 /** Lease length. Must exceed the worst-case OpenAI call (8s timeout x 2 attempts). */
 export const LOCK_TTL_MS = 30_000;
 /** How long a request that lost the lock race waits for the winner's fact. */
@@ -130,6 +131,7 @@ export async function getFactForUser(userId: string, deps: FactDeps): Promise<Fa
     }
 
     // createdAt comes from the same clock the cache window is measured with.
+    // Every generated fact is stored (1:many); the newest is the "current" one.
     const fact = await prisma.fact.create({
       data: { userId, movie, content, createdAt: now() },
     });
@@ -167,4 +169,25 @@ async function waitForOtherGeneration(
     if (!lockHeld) break; // owner finished without producing a fresh fact
   }
   return stale ? { ok: true, fact: toDTO(stale), source: "fallback" } : UNAVAILABLE;
+}
+
+export type LatestFactResult =
+  | { ok: true; fact: FactDTO | null }
+  | { ok: false; code: "NO_MOVIE"; message: string };
+
+/**
+ * Read-only: the user's most recent stored fact for their current movie, or
+ * null if none exists yet. Never calls OpenAI, never takes the lock — used to
+ * show the last fact on page load. Generation only happens via getFactForUser.
+ */
+export async function getLatestFact(userId: string): Promise<LatestFactResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { favoriteMovie: true },
+  });
+  const movie = user?.favoriteMovie;
+  if (!movie) return { ok: false, code: "NO_MOVIE", message: "Add a favorite movie first." };
+
+  const latest = await latestFact(userId, movie);
+  return { ok: true, fact: latest ? toDTO(latest) : null };
 }

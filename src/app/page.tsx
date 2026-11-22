@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/server/auth";
 import { GoogleIcon } from "@/components/GoogleIcon";
+import { AlertIcon, CheckIcon, ClapperIcon, InfoIcon } from "@/components/icons";
 
 const STEPS = [
   { title: "Sign in with Google", body: "One click — no new password to remember." },
@@ -19,43 +20,25 @@ function authErrorMessage(code: string | undefined): string | null {
   return "We couldn't sign you in right now. Please try again.";
 }
 
-function ClapperIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4Z" />
-      <path d="m4 11-.88-2.87a2 2 0 0 1 1.33-2.5l11.48-3.5a2 2 0 0 1 2.5 1.32l.87 2.87L4 11.01Z" />
-      <path d="m6.6 4.99 3.38 4.2M11.86 3.38l3.38 4.2" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 flex-none text-accent" aria-hidden>
-      <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.79 6.8-6.8a1 1 0 0 1 1.4 0Z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function AlertIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 h-4 w-4 flex-none" aria-hidden>
-      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-12a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
-    </svg>
-  );
-}
+// Why the user was sent here (set by our own redirects).
+const NOTICES: Record<string, string> = {
+  "signin-required": "Please sign in to view your dashboard.",
+  "signed-out": "You've been signed out. See you next time!",
+};
 
 export default async function LandingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
   // Signed-in users skip the landing page. /dashboard decides between
   // onboarding (first-time) and the dashboard itself (returning).
   const session = await auth();
   if (session?.user?.id) redirect("/dashboard");
 
-  const errorMessage = authErrorMessage((await searchParams).error);
+  const params = await searchParams;
+  const errorMessage = authErrorMessage(params.error);
+  const notice = !errorMessage && params.notice ? NOTICES[params.notice] : undefined;
 
   async function signInWithGoogle() {
     "use server";
@@ -67,7 +50,7 @@ export default async function LandingPage({
       <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-line bg-[#0e0c22]/85 shadow-2xl shadow-black/60 backdrop-blur-xl md:grid-cols-[1.1fr_1fr]">
         {/* ── Left: brand + how it works ─────────────────────────────── */}
         <section className="relative border-b border-line p-8 md:border-r md:border-b-0 md:p-10">
-          {/* soft amber glow behind the brand */}
+          {/* soft gold glow behind the brand */}
           <div className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
 
           <div className="relative flex items-center gap-3">
@@ -82,7 +65,7 @@ export default async function LandingPage({
           <h1 className="relative mt-8 text-3xl leading-tight font-bold tracking-tight md:text-4xl">
             Every film has a story.
             <br />
-            <span className="bg-gradient-to-r from-accent to-orange-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-accent to-[#c99a3e] bg-clip-text text-transparent">
               Discover yours.
             </span>
           </h1>
@@ -114,6 +97,16 @@ export default async function LandingPage({
           <h2 className="text-2xl font-semibold tracking-tight">Sign in</h2>
           <p className="mt-1 text-sm text-muted">Continue to Movie Memory with your Google account.</p>
 
+          {notice && (
+            <div
+              role="status"
+              className="mt-6 flex gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent"
+            >
+              <InfoIcon />
+              <span>{notice}</span>
+            </div>
+          )}
+
           {errorMessage && (
             <div
               role="alert"
@@ -131,7 +124,7 @@ export default async function LandingPage({
               className="group flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-white px-4 font-medium text-[#1f1f1f] shadow-lg shadow-black/30 ring-1 ring-black/10 transition hover:-translate-y-px hover:bg-neutral-50 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e0c22] active:translate-y-0"
             >
               <GoogleIcon />
-              Continue with Google
+              Sign in with Google
             </button>
           </form>
 

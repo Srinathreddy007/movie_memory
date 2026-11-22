@@ -52,8 +52,10 @@ describe("60-second cache window", () => {
     expect(second).toMatchObject({ ok: true, source: "fresh" });
     if (!first.ok || !second.ok) throw new Error("expected success");
     expect(second.fact.id).not.toBe(first.fact.id);
+    expect(second.fact.content).toBe("Interstellar fact #2");
     expect(generateFact).toHaveBeenCalledTimes(2);
-    expect(await prisma.fact.count()).toBe(2); // old facts are kept as history
+    // 1:many — every generated fact is stored; the newest is returned.
+    expect(await prisma.fact.count({ where: { userId: user.id } })).toBe(2);
   });
 
   it("scopes the cache to the movie: changing the movie bypasses it", async () => {
@@ -68,6 +70,7 @@ describe("60-second cache window", () => {
 
     expect(result).toMatchObject({ ok: true, source: "fresh", fact: { movie: "Arrival" } });
     expect(generateFact).toHaveBeenLastCalledWith("Arrival");
+    expect(await prisma.fact.count({ where: { userId: user.id } })).toBe(2); // Interstellar fact kept
   });
 
   it("returns NO_MOVIE for a user who has not onboarded", async () => {
@@ -78,6 +81,24 @@ describe("60-second cache window", () => {
 
     expect(result).toMatchObject({ ok: false, code: "NO_MOVIE" });
     expect(generateFact).not.toHaveBeenCalled();
+  });
+});
+
+describe("movie scoping", () => {
+  it("never serves a stored fact about a previous movie, even as a fallback", async () => {
+    const user = await createUser("Interstellar");
+    const clock = fakeClock();
+    await getFactForUser(user.id, { generateFact: countingGenerator(), now: clock.now });
+    await prisma.user.update({ where: { id: user.id }, data: { favoriteMovie: "Arrival" } });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await getFactForUser(user.id, {
+      generateFact: async () => Promise.reject(new Error("down")),
+      now: clock.now,
+    });
+
+    // The only stored fact is about Interstellar, so there is nothing valid to fall back to.
+    expect(result).toMatchObject({ ok: false, code: "FACT_UNAVAILABLE" });
   });
 });
 

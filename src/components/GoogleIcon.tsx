@@ -1,4 +1,4 @@
-/** Official multicolor Google "G" mark, used only on the Google sign-in button. */
+/** Official multicolor Google "G" mark (sign-in button and "Signed in with Google" badge). */
 export function GoogleIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 48 48" aria-hidden="true">

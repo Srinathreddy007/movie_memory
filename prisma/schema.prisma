@@ -29,14 +29,16 @@ model User {
   /// user has exactly one favorite movie at a time.
   factLockedUntil DateTime?
 
+  /// 1:many — every generated fact is stored; the newest one per movie is "current".
   facts     Fact[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/// A generated fun fact. `movie` is a snapshot of the title the fact was
-/// generated for, so the cache key is (userId, movie) and changing the
-/// favorite movie naturally starts a fresh cache scope.
+/// A generated fun fact. Every generation is stored (1:many from User), so the
+/// "most recent fact for this user + movie" is the newest row for that pair.
+/// `movie` is a snapshot of the title the fact was generated for: the cache key
+/// is (userId, movie), and changing the favorite movie starts a fresh cache scope.
 model Fact {
   id        String   @id @default(cuid())
   userId    String

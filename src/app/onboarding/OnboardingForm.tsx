@@ -23,7 +23,7 @@ export function OnboardingForm() {
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) {
-        window.location.href = "/"; // session expired
+        window.location.href = "/?notice=signin-required"; // session expired
         return;
       }
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
