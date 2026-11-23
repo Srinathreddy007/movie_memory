@@ -191,8 +191,9 @@ export function FactCard({ userId, movie }: { userId: string; movie: string }) {
         </div>
       ) : shown ? (
         <div className={requesting ? "opacity-50 transition" : "transition"}>
-          <blockquote className="relative mt-6 border-l-2 border-accent/60 pl-5">
-            <span aria-hidden className="absolute -top-4 -left-1 font-serif text-6xl leading-none text-accent/20">
+          <blockquote className="relative mt-6 border-l-2 border-accent/60 pl-12">
+            {/* Decorative quote mark, placed inside the padding so it never touches the line */}
+            <span aria-hidden className="absolute top-0 left-4 font-serif text-5xl leading-none text-accent/40 select-none">
               &ldquo;
             </span>
             <p className="text-lg leading-relaxed md:text-xl">{shown.fact.content}</p>

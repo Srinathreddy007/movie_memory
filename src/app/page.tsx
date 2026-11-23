@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/server/auth";
+import { signIn } from "@/server/auth";
+import { getSignedInUserId } from "@/server/session";
 import { GoogleIcon } from "@/components/GoogleIcon";
 import { AlertIcon, CheckIcon, ClapperIcon, InfoIcon } from "@/components/icons";
 
@@ -33,8 +34,9 @@ export default async function LandingPage({
 }) {
   // Signed-in users skip the landing page. /dashboard decides between
   // onboarding (first-time) and the dashboard itself (returning).
-  const session = await auth();
-  if (session?.user?.id) redirect("/dashboard");
+  // Checks the DB, not just the cookie: a cookie for a deleted user must show
+  // the sign-in page, or "/" and "/dashboard" would redirect to each other forever.
+  if (await getSignedInUserId()) redirect("/dashboard");
 
   const params = await searchParams;
   const errorMessage = authErrorMessage(params.error);

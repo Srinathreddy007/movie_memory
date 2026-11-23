@@ -17,7 +17,7 @@ Built for the SWE full-stack take-home: the **base implementation** plus **Varia
 | **A1:** 60-second cache window per user + movie | ✅ | `facts.ts` (tested at 59s and 60s) |
 | **A2:** burst / idempotency protection | ✅ | `facts.ts`, Postgres lease (5 concurrent requests → 1 generation) |
 | **A3:** OpenAI failure → last fact, else a friendly error | ✅ | `facts.ts`, `openai.ts` |
-| **A4:** tests for the cache logic and authorization | ✅ | `tests/` (39 tests, real Postgres) |
+| **A4:** tests for the cache logic and authorization | ✅ | `tests/` (42 tests, real Postgres) |
 
 ---
 
@@ -108,7 +108,7 @@ The test suite applies migrations to `TEST_DATABASE_URL` automatically before it
 ## 4. Tests
 
 ```bash
-pnpm test                  # 39 tests, ~1.5s, against the real Postgres test DB
+pnpm test                  # 42 tests, ~1.5s, against the real Postgres test DB
 pnpm lint
 pnpm exec tsc --noEmit
 ```
@@ -121,6 +121,7 @@ The tests run against **real Postgres**, not a mocked ORM, so the lock is exerci
 | `tests/facts.auth.test.ts` | 11 | **Authorization:** user B never receives user A's fact, even for the **same movie title**, through the cache, the fallback or either endpoint. `GET`/`POST /api/fact` return 401 without a session. `GET` is read-only: it returns the newest fact (even a stale one) or `null`, and never calls OpenAI |
 | `tests/me.api.test.ts` | 10 | `GET /api/me` and `PUT /api/me/movie`: 401, null-safe profile fields, trimming, invalid input (blank, too long, missing, wrong type, non-JSON). A `userId` sent in the body is ignored |
 | `tests/api-client.test.ts` | 7 | The typed client normalizes 401 / 400 / 500 (non-JSON) / network failures into one `ApiError`, and uses the right HTTP methods |
+| `tests/session.test.ts` | 3 | A valid session cookie whose user no longer exists is treated as signed out, which prevents the `/` ↔ `/dashboard` redirect loop |
 
 **Checking the tests themselves:** I temporarily made the lock always succeed, and the burst tests failed, so they really guard the lock. I also ran the flows end to end against the running app with real HTTP requests: sign-in redirects, onboarding validation, a smuggled `userId` being ignored, and 5 parallel fact requests producing exactly one OpenAI call and one stored fact.
 
@@ -376,6 +377,6 @@ The lease keeps a transaction's correctness (one atomic `UPDATE`) while holding 
   - keeping `User : Fact` 1:many. I briefly switched to 1:1 (one overwritten row per user), then went back because the spec's "store generated facts" and "most recent fact" point to keeping every fact
 - **Brainstorming and review:** used it to question the design: whether a separate cache was needed (we measured Postgres read latency to decide), what each burst-protection option would cost, how several clients of the same user see facts, and whether the requirements were fully met (a spec-by-spec audit that caught, for example, the button label drifting from "Sign in with Google").
 - **Code generation:** the AI wrote first drafts. I reviewed each step, ran the app locally, and asked for changes, including the visual theme, the animated cinema background, the Stripe-inspired sign-in layout, the dashboard redesign, and a WCAG contrast check of the palette.
-- **Debugging:** diagnosed the Google OAuth errors (`client_id` missing → `redirect_uri_mismatch` → `access_denied` for a non-test user), pnpm 11's blocked install scripts, and a dev-server cache corrupted by running a production build at the same time.
+- **Debugging:** diagnosed the Google OAuth errors (`client_id` missing → `redirect_uri_mismatch` → `access_denied` for a non-test user), pnpm 11's blocked install scripts, a dev-server cache corrupted by running a production build at the same time, and a `/` ↔ `/dashboard` redirect loop caused by a still-valid cookie for a user deleted from the database.
 - **Verification:** every change was checked with the type-checker, lint and the test suite against real Postgres, plus live HTTP checks against the running app. The burst tests were validated by deliberately breaking the lock.
 - **Secrets:** API keys and OAuth credentials were entered directly into `.env`, which is git-ignored and never committed.

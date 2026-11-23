@@ -98,17 +98,8 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="min-w-0">
-                  {/* Marquee label with bulb lights */}
-                  <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1">
-                    <span className="flex gap-1" aria-hidden>
-                      {[0, 1, 2].map((i) => (
-                        <span
-                          key={i}
-                          className="marquee-bulb h-1.5 w-1.5 rounded-full bg-accent"
-                          style={{ animationDelay: `${i * 0.3}s` }}
-                        />
-                      ))}
-                    </span>
+                  {/* "Now showing" marquee label */}
+                  <div className="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-3 py-1">
                     <span className="text-xs font-semibold tracking-widest text-accent uppercase">
                       Now showing
                     </span>

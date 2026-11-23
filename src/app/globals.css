@@ -155,16 +155,6 @@ body {
   .live-bg * { animation: none !important; }
 }
 
-/* Dashboard "Now showing" marquee bulbs */
-.marquee-bulb { animation: marquee-bulb 1.2s ease-in-out infinite; }
-@keyframes marquee-bulb {
-  0%, 100% { opacity: 0.35; box-shadow: none; }
-  50%      { opacity: 1; box-shadow: 0 0 6px var(--accent); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-bulb { animation: none; opacity: 1; }
-}
-
 /* Error / 404 pages: the sad emoji droops and bobs gently */
 .status-emoji {
   display: inline-block;
