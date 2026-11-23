@@ -36,7 +36,15 @@ Built for the SWE full-stack take-home: the **base implementation** plus **Varia
 
 ## 1. Quick start
 
-**Prerequisites:** Node.js 22+, pnpm, PostgreSQL 14+ running locally.
+**Prerequisites:** Node.js 22+, pnpm 11 (`corepack enable` picks up the version pinned in `package.json`), PostgreSQL 14+ running locally.
+
+**What you need for what:**
+
+| To… | You need |
+|---|---|
+| Run the tests (`pnpm test`) | Postgres only |
+| Use the app in a browser (`pnpm dev`) | Postgres **+ Google OAuth credentials** (sign-in is required to reach any page past the landing page) |
+| See generated fun facts | All of the above **+ an OpenAI API key**. Without one the app still runs and the fact card shows a friendly error |
 
 ```bash
 # 1. Install dependencies
@@ -48,6 +56,10 @@ pnpm install
 psql -U postgres -c "CREATE ROLE moviememory LOGIN PASSWORD 'moviememory' CREATEDB;" \
                  -c "CREATE DATABASE moviememory OWNER moviememory;" \
                  -c "CREATE DATABASE moviememory_test OWNER moviememory;"
+#    macOS + Homebrew Postgres has no "postgres" role (the superuser is your Mac
+#    username), so replace `-U postgres` with `-d postgres`:
+#      psql -d postgres -c "CREATE ROLE ..." -c "CREATE DATABASE ..." -c "..."
+#    Using different credentials? Update DATABASE_URL / TEST_DATABASE_URL in .env.
 
 # 3. Configure environment
 cp .env.example .env        # then fill in the values (section 2)
